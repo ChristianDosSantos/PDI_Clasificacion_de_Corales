@@ -90,23 +90,119 @@ for i in range(0,height,1):
 
 
 MCD = np.array(MCD,dtype = np.uint8)
-print (MCD)
-print(Ibright)
+#print (MCD)
+#print(Ibright)
 Imagen_dif_color = np.zeros((height,width,1))
 Imagen_dif_color[:,:,0] = MCD
+# Ibright = np.array(Ibright,dtype = np.uint8)
 # cv2.imshow("Imagen Final", Ibright)
 # cv2.waitKey(0)
 
 for i in range(0,height,1):
     for j in range(0,width,1):
         Ibright2[i,j] = coefHsv*Ibright[i,j] + (1-coefHsv)*MCD[i,j]
+        if Ibright2[i,j] > 255:
+            Ibright2[i,j] = 255 
+
+Ibright2 = np.array(Ibright2,dtype = np.uint8)
+cv2.imshow("Imagen Final 2", Ibright2)
 
 kernel = [[-1,-1,-1],[1,0,-1],[1,1,1]]
+kernel = np.asarray(kernel)
 Image_variance = cv2.filter2D(src,-1,kernel)
 cv2.imshow('Color r',Image_variance[:,:,0])
 cv2.imshow('Color g',Image_variance[:,:,1])
 cv2.imshow('Color b',Image_variance[:,:,2])
 cv2.waitKey(0)
+
+Imax = 0
+
+for i in range(0,height,1):
+    for j in range(0,width,1):
+        if Ibright2[i,j] > Imax:
+            Imax = Ibright2[i,j]
+
+I1per = Imax//100
+PixVarMaxr = Image_variance[0,0,0]
+PixVarMaxg = Image_variance[0,0,1]
+PixVarMaxb = Image_variance[0,0,2]
+AtmR = 0
+AtmG = 0
+AtmB = 0
+
+
+for i in range(0,height,1):
+    for j in range(0,width,1):
+        if Ibright2[i,j] <= I1per:
+            if Image_variance[i,j,0] < PixVarMaxr:
+                PixVarMaxr = Image_variance[i,j,0]
+                AtmR = src[i,j,0]
+            if Image_variance[i,j,1] < PixVarMaxg:
+                PixVarMaxg = Image_variance[i,j,1]
+                AtmG = src[i,j,1]
+            if Image_variance[i,j,2] < PixVarMaxb:
+                PixVarMaxb = Image_variance[i,j,2]
+                AtmB = src[i,j,2]
+
+transR = np.zeros((height,width))
+transG = np.zeros((height,width))
+transB = np.zeros((height,width))
+
+Ibright2 = np.array(Ibright2,dtype = int) 
+AtmR = np.array(AtmR,dtype = int) 
+AtmG = np.array(AtmG,dtype = int) 
+AtmB = np.array(AtmB,dtype = int) 
+
+
+for i in range(0,height,1):
+    for j in range(0,width,1):
+        transR[i,j] = (Ibright2[i,j] - AtmR)//(1 - AtmR)
+        transG[i,j] = (Ibright2[i,j] - AtmG)//(1 - AtmG)
+        transB[i,j] = (Ibright2[i,j] - AtmB)//(1 - AtmB)
+        if transR[i,j] > 255:
+            transR[i,j] = 255
+        if transG[i,j] > 255:
+            transG[i,j] = 255
+        if transB[i,j] > 255:
+            transB[i,j] = 255
+
+# AtmR = np.array(AtmR,dtype = np.uint8) 
+# AtmG = np.array(AtmG,dtype = np.uint8) 
+# AtmB = np.array(AtmB,dtype = np.uint8) 
+
+# transR = np.array(transR,dtype = np.uint8) 
+# transG = np.array(transG,dtype = np.uint8) 
+# transB = np.array(transB,dtype = np.uint8) 
+
+Image_trans = cv2.merge((transR,transG,transB))
+
+cv2.imshow("Transmitance Image R",transR)
+cv2.imshow("Transmitance Image G",transG)
+cv2.imshow("Transmitance Image B",transB)
+cv2.waitKey(0)
+
+Image_dehaze = np.zeros((height,width,3))
+
+for i in range(0,height,1):
+    for j in range(0,width,1):
+        Image_dehaze[i,j,0] = (r[i,j] - AtmR)//transR[i,j] + AtmR
+        Image_dehaze[i,j,1] = (g[i,j] - AtmG)//transG[i,j] + AtmG
+        Image_dehaze[i,j,2] = (b[i,j] - AtmB)//transB[i,j] + AtmB
+        if Image_dehaze[i,j,0] > 255:
+            Image_dehaze[i,j,0] = 255
+        if Image_dehaze[i,j,1] > 255:
+            Image_dehaze[i,j,1] = 255
+        if Image_dehaze[i,j,2] > 255:
+            Image_dehaze[i,j,2] = 255
+
+Image_dehaze = np.array(Image_dehaze,dtype = np.uint8) 
+cv2.imshow("Image dehaze",Image_dehaze)
+cv2.waitKey(0)
+
+
+
+
+
 
 
 
