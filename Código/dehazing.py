@@ -1,6 +1,8 @@
 import cv2
 import numpy as np 
 import matplotlib.pyplot as plt
+import math
+from PIL import Image
 
 # def convolve(image, kernel):
 # 	# grab the spatial dimensions of the image, along with
@@ -52,6 +54,7 @@ height, width, depth = src.shape
 srcHsv = cv2.cvtColor(src,cv2.COLOR_RGB2HSV)
 h, s, v = cv2.split(srcHsv)
 coefHsv = 0
+patchSize = math.sqrt(height*width)//50
 
 Cmin = 0
 Cmax = 0
@@ -82,20 +85,24 @@ for i in range(0,height,1):
         MCD[i,j] = 1 - max(max(Cmax - Cmin, 0),max(Cmed - Cmin, 0))
         for  y in range(i-1,i+2,1):
             for x in range (j-1,j+2,1):
+        # for  y in range(i-int(patchSize//2),i+ int(patchSize//2) + 1,1):
+        #     for x in range (j-int(patchSize//2),j+int(patchSize)+1,1):
                 if x < 0 or y < 0 or x >= width or y >= height:
                     continue
                 else:
                     Ibright[i,j] = max(max(b[y,x], g[y,x], r[y,x]),Ibright[i,j])
         coefHsv = max(srcHsv[i,j,1],coefHsv)
 
+coefHsv = 0.7
 
 MCD = np.array(MCD,dtype = np.uint8)
+cv2.imshow("Maximun Color Image", MCD)
 #print (MCD)
 #print(Ibright)
 Imagen_dif_color = np.zeros((height,width,1))
 Imagen_dif_color[:,:,0] = MCD
-# Ibright = np.array(Ibright,dtype = np.uint8)
-# cv2.imshow("Imagen Final", Ibright)
+Ibright8 = np.array(Ibright,dtype = np.uint8)
+cv2.imshow("Imagen Canal Brillante", Ibright8)
 # cv2.waitKey(0)
 
 for i in range(0,height,1):
@@ -104,8 +111,8 @@ for i in range(0,height,1):
         if Ibright2[i,j] > 255:
             Ibright2[i,j] = 255 
 
-Ibright2 = np.array(Ibright2,dtype = np.uint8)
-cv2.imshow("Imagen Final 2", Ibright2)
+Ibright28 = np.array(Ibright2,dtype = np.uint8)
+cv2.imshow("Imagen Canal Brillante 2", Ibright28)
 
 kernel = [[-1,-1,-1],[1,0,-1],[1,1,1]]
 kernel = np.asarray(kernel)
@@ -115,21 +122,36 @@ cv2.imshow('Color g',Image_variance[:,:,1])
 cv2.imshow('Color b',Image_variance[:,:,2])
 cv2.waitKey(0)
 
-Imax = 0
+# Imax = 0
 
-for i in range(0,height,1):
-    for j in range(0,width,1):
-        if Ibright2[i,j] > Imax:
-            Imax = Ibright2[i,j]
+# for i in range(0,height,1):
+#     for j in range(0,width,1):
+#         if Ibright2[i,j] > Imax:
+#             Imax = Ibright2[i,j]
 
-I1per = Imax//100
-PixVarMaxr = Image_variance[0,0,0]
-PixVarMaxg = Image_variance[0,0,1]
-PixVarMaxb = Image_variance[0,0,2]
+hist = cv2.calcHist([Ibright28[:,:]],[0],None,[256],[0,256])
+# plt.figure()
+# plt.plot(hist)
+# plt.show()
+
+NumPixelPer = height*width//100
+PixAcc = 0
+I1per = 0
+
+for i in range(0,256,1):
+    PixAcc += hist[i]
+    if PixAcc >= NumPixelPer:
+        I1per = i
+        break
+
+# I1per = Imax//100
+PixVarMaxr = 256
+PixVarMaxg = 256
+PixVarMaxb = 256
 AtmR = 0
 AtmG = 0
 AtmB = 0
-
+print(I1per)
 
 for i in range(0,height,1):
     for j in range(0,width,1):
@@ -147,8 +169,11 @@ for i in range(0,height,1):
 transR = np.zeros((height,width))
 transG = np.zeros((height,width))
 transB = np.zeros((height,width))
+ 
+print(AtmR)
+print(AtmG)
+print(AtmB)
 
-Ibright2 = np.array(Ibright2,dtype = int) 
 AtmR = np.array(AtmR,dtype = int) 
 AtmG = np.array(AtmG,dtype = int) 
 AtmB = np.array(AtmB,dtype = int) 
@@ -170,34 +195,39 @@ for i in range(0,height,1):
 # AtmG = np.array(AtmG,dtype = np.uint8) 
 # AtmB = np.array(AtmB,dtype = np.uint8) 
 
-# transR = np.array(transR,dtype = np.uint8) 
-# transG = np.array(transG,dtype = np.uint8) 
-# transB = np.array(transB,dtype = np.uint8) 
+transR8 = np.array(transR,dtype = np.uint8) 
+transG8 = np.array(transG,dtype = np.uint8) 
+transB8 = np.array(transB,dtype = np.uint8) 
+ImageTransR = Image.fromarray(transR8,'L')
+ImageTransR.show()
 
 Image_trans = cv2.merge((transR,transG,transB))
 
-cv2.imshow("Transmitance Image R",transR)
-cv2.imshow("Transmitance Image G",transG)
-cv2.imshow("Transmitance Image B",transB)
+cv2.imshow("Transmitance Image R",transR8)
+cv2.imshow("Transmitance Image G",transG8)
+cv2.imshow("Transmitance Image B",transB8)
 cv2.waitKey(0)
 
 Image_dehaze = np.zeros((height,width,3))
 
 for i in range(0,height,1):
     for j in range(0,width,1):
-        Image_dehaze[i,j,0] = (r[i,j] - AtmR)//transR[i,j] + AtmR
-        Image_dehaze[i,j,1] = (g[i,j] - AtmG)//transG[i,j] + AtmG
-        Image_dehaze[i,j,2] = (b[i,j] - AtmB)//transB[i,j] + AtmB
+        Image_dehaze[i,j,0] = int(((r[i,j] - AtmR)//transR[i,j]) + AtmR)
+        # print(Image_dehaze[i,j,0])
+        Image_dehaze[i,j,1] = int(((g[i,j] - AtmG)//transG[i,j]) + AtmG)
+        Image_dehaze[i,j,2] = int(((b[i,j] - AtmB)//transB[i,j]) + AtmB)
         if Image_dehaze[i,j,0] > 255:
             Image_dehaze[i,j,0] = 255
         if Image_dehaze[i,j,1] > 255:
             Image_dehaze[i,j,1] = 255
         if Image_dehaze[i,j,2] > 255:
             Image_dehaze[i,j,2] = 255
-
+# print(Image_dehaze)
 Image_dehaze = np.array(Image_dehaze,dtype = np.uint8) 
-cv2.imshow("Image dehaze",Image_dehaze)
-cv2.waitKey(0)
+Image_dehaze2 = Image.fromarray(Image_dehaze,"RGB")
+Image_dehaze2.show()
+# cv2.imshow("Image dehaze",Image_dehaze)
+# cv2.waitKey(0)
 
 
 
