@@ -21,14 +21,22 @@ cv2.imshow('Imagen Abierta',openImage)
 
 openImage2 = cv2.morphologyEx(openImage,cv2.MORPH_OPEN,kernel)
 cv2.imshow('Imagen Abierta 2',openImage2)
-cv2.waitKey(0)
 
-# imgray = cv2.cvtColor(openImage2, cv2.COLOR_BGR2GRAY)
-# ret, thresh = cv2.threshold(imgray, 127, 255, 0)
-# contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
-# final = cv2.drawContours(thresh, contours, -1, (0,255,0), 3)
-# cv2.imshow('Contours',final)
-# cv2.imshow('imgray2',imgray)
+closeImage = cv2.morphologyEx(openImage,cv2.MORPH_CLOSE,kernel)
+cv2.imshow('Imagen Cerrada 2',closeImage)
+
+imgray = cv2.cvtColor(closeImage, cv2.COLOR_BGR2GRAY)
+ret, thresh = cv2.threshold(imgray, 127, 255, 0)
+cv2.imshow('imgray2',imgray)
+if cv2.__version__.startswith("3."):
+    _, contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+else:
+    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+print(contours)
+## Draw contours 
+cv2.drawContours(closeImage, contours, -1, (0, 255, 0), 1)
+cv2.imshow('Contours',closeImage)
+
 
 imageFinal = cv2.dilate(openImage2,kernel,iterations=2)
 cv2.imshow('Imagen Final', imageFinal)
