@@ -325,6 +325,8 @@ plt.imshow(imageRGBThreshColor)
 plt.title('Cluster Image with Contours')
 plt.xlabel('Horizontal Pixels')
 plt.ylabel('Vertical Pixels')
+cv2.imwrite('Cluster.png',thresh)
+plt.show()
 
 # This implements K-means for BGR
 features2D = imageBGR.reshape((-1, 3))
