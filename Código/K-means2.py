@@ -141,7 +141,7 @@ plt.show()
 # plt.show() 
 
 # These lines draw in category shape in white for better viewing
-K = 12
+K = 6
 ret, label, center = cv2.kmeans(
         features2D, K, None, criteria, attempts, cv2.KMEANS_PP_CENTERS)
 imageRGBThresh = imageRGB
@@ -253,7 +253,7 @@ plt.show()
 # plt.show() 
 
 # These lines plot each cluster in white
-K = 12
+K = 8
 ret, label, center = cv2.kmeans(
         features2D, K, None, criteria, attempts, cv2.KMEANS_PP_CENTERS)
 imageRGBThresh = imageRGB
@@ -443,7 +443,7 @@ plt.show()
 # plt.show() 
 
 # These lines plot each cluster in white
-K = 12
+K = 8
 ret, label, center = cv2.kmeans(
         features2D, K, None, criteria, attempts, cv2.KMEANS_PP_CENTERS)
 imageRGBThresh = imageRGB
@@ -456,6 +456,9 @@ for i in range(0, height, 1):
                 imageRGBThresh1[i,j,:,y] = [255,255,255]
             else:
                 imageRGBThresh1[i,j,:,y] = [0,0,0]
+
+cv2.imwrite('HSCluster1.png', imageRGBThresh1[:,:,:,0])
+cv2.imwrite('HSCluster2.png', imageRGBThresh1[:,:,:,1])
 
 plt.figure()
 plt.suptitle('Image cluster for K=' + str(K))
@@ -556,7 +559,7 @@ plt.show()
 # plt.show() 
 
 # These lines plot each cluster in white
-K = 12
+K = 6
 ret, label, center = cv2.kmeans(
         features2D, K, None, criteria, attempts, cv2.KMEANS_PP_CENTERS)
 imageRGBThresh = imageRGB

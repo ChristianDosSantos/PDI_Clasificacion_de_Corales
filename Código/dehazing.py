@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 from PIL import Image
+from cv2.ximgproc import guidedFilter
 
 # def convolve(image, kernel):
 # 	# grab the spatial dimensions of the image, along with
@@ -42,7 +43,7 @@ from PIL import Image
 #     # return the output image
 #     return output
 
-src = cv2.imread("../FotoCoral1.jpg")
+src = cv2.imread("../fotoEjemplo2.png")
 
 src = cv2.cvtColor(src,cv2.COLOR_BGR2RGB)
 r, g, b = cv2.split(src)
@@ -53,7 +54,7 @@ height, width, depth = src.shape
 
 srcHsv = cv2.cvtColor(src,cv2.COLOR_RGB2HSV)
 h, s, v = cv2.split(srcHsv)
-coefHsv = 0
+coefHsv = 0.0
 patchSize = math.sqrt(height*width)//50
 
 Cmin = 0
@@ -63,6 +64,47 @@ Imax = 0
 Ibright = np.zeros((height,width))
 MCD = np.zeros((height,width))
 Ibright2 = np.zeros((height,width))
+
+histR = cv2.calcHist(src,[0],None,[256],[0,256])
+histG = cv2.calcHist(src,[1],None,[256],[0,256])
+histB = cv2.calcHist(src,[2],None,[256],[0,256])
+plt.figure()
+plt.subplot(2,2,1)
+plt.imshow(src)
+plt.subplot(2,2,2)
+plt.plot(histR)
+plt.subplot(2,2,3)
+plt.plot(histG)
+plt.subplot(2,2,4)
+plt.plot(histB)
+plt.show()
+Racc = 0
+Gacc = 0
+Bacc = 0
+for i in range(0,256,1):
+    Racc += (i+1)*histR[i]
+    Gacc += (i+1)*histG[i]
+    Bacc += (i+1)*histB[i]
+if Racc >= Gacc:
+    Canalmax = 0
+    Canalmin = 1
+else:
+    Canalmax = 1
+    Canalmin = 0
+if Bacc >= Canalmax:
+    Canalmed = Canalmax
+    Canalmax = 2
+else:
+    if Bacc <= Cmin:
+        Canalmed = Canalmin
+        Canalmin = Bacc
+print(Racc)
+print(Gacc)
+print(Bacc)
+print(Canalmax)
+print(Canalmed)
+print(Canalmin)
+        
 
 for i in range(0,height,1):
     for j in range(0,width,1):
@@ -79,21 +121,29 @@ for i in range(0,height,1):
         #     if b[i,j] <= Cmin:
         #         Cmed = Cmin
         #         Cmin = b[i,j]
-        Cmax = max(r[i,j],b[i,j],g[i,j])
-        Cmin = min(r[i,j],b[i,j],g[i,j])
-        Cmed = r[i,j] + g[i,j] + b[i,j] - Cmax - Cmin
-        MCD[i,j] = 1 - max(max(Cmax - Cmin, 0),max(Cmed - Cmin, 0))
-        for  y in range(i-1,i+2,1):
-            for x in range (j-1,j+2,1):
-        # for  y in range(i-int(patchSize//2),i+ int(patchSize//2) + 1,1):
-        #     for x in range (j-int(patchSize//2),j+int(patchSize)+1,1):
+        # Cmax = max(r[i,j],b[i,j],g[i,j])
+        # Cmin = min(r[i,j],b[i,j],g[i,j])
+        # Cmed = r[i,j] + g[i,j] + b[i,j] - Cmax - Cmin
+        Cmax = int(src[i,j,Canalmax])
+        Cmed = int(src[i,j,Canalmed])
+        Cmin = int(src[i,j,Canalmin])
+        # print(255 - max(max(Cmax - Cmin, 0),max(Cmed - Cmin, 0)))
+        MCD[i,j] = 255 - max(max(Cmax - Cmin, 0),max(Cmed - Cmin, 0))
+        # for  y in range(i-1,i+2,1):
+        #     for x in range (j-1,j+2,1):
+        for  y in range(i-int(patchSize),i+ int(patchSize) + 1,1):
+            for x in range (j-int(patchSize),j+int(patchSize)+1,1):
                 if x < 0 or y < 0 or x >= width or y >= height:
                     continue
                 else:
                     Ibright[i,j] = max(max(b[y,x], g[y,x], r[y,x]),Ibright[i,j])
-        coefHsv = max(srcHsv[i,j,1],coefHsv)
-
-coefHsv = 0.7
+        # print(srcHsv[i,j,1])
+        coefHsv = max(float(srcHsv[i,j,1]/255),coefHsv)
+        # print(coefHsv)
+        
+print(coefHsv)
+# coefHsv = 0.7
+cv2.waitKey(0)
 
 MCD = np.array(MCD,dtype = np.uint8)
 cv2.imshow("Maximun Color Image", MCD)
@@ -103,11 +153,11 @@ Imagen_dif_color = np.zeros((height,width,1))
 Imagen_dif_color[:,:,0] = MCD
 Ibright8 = np.array(Ibright,dtype = np.uint8)
 cv2.imshow("Imagen Canal Brillante", Ibright8)
-# cv2.waitKey(0)
+cv2.waitKey(0)
 
 for i in range(0,height,1):
     for j in range(0,width,1):
-        Ibright2[i,j] = coefHsv*Ibright[i,j] + (1-coefHsv)*MCD[i,j]
+        Ibright2[i,j] = int(coefHsv*float(Ibright[i,j]) + (1-coefHsv)*float(MCD[i,j]))
         if Ibright2[i,j] > 255:
             Ibright2[i,j] = 255 
 
@@ -166,9 +216,9 @@ for i in range(0,height,1):
                 PixVarMaxb = Image_variance[i,j,2]
                 AtmB = src[i,j,2]
 
-transR = np.zeros((height,width))
-transG = np.zeros((height,width))
-transB = np.zeros((height,width))
+transR = np.zeros((height,width),dtype=np.int)
+transG = np.zeros((height,width),dtype=np.int)
+transB = np.zeros((height,width),dtype=np.int)
  
 print(AtmR)
 print(AtmG)
@@ -177,19 +227,23 @@ print(AtmB)
 AtmR = np.array(AtmR,dtype = int) 
 AtmG = np.array(AtmG,dtype = int) 
 AtmB = np.array(AtmB,dtype = int) 
-
+AtmP = (AtmR + AtmG + AtmB)//3
 
 for i in range(0,height,1):
     for j in range(0,width,1):
-        transR[i,j] = (Ibright2[i,j] - AtmR)//(1 - AtmR)
-        transG[i,j] = (Ibright2[i,j] - AtmG)//(1 - AtmG)
-        transB[i,j] = (Ibright2[i,j] - AtmB)//(1 - AtmB)
+        # print(Ibright2[i,j])
+        transR[i,j] = int(255*(float(Ibright2[i,j]) - float(AtmR))/(255 - float(AtmR)))
+        transG[i,j] = int(255*(float(Ibright2[i,j]) - float(AtmG))/(255 - float(AtmG)))
+        transB[i,j] = int(255*(float(Ibright2[i,j]) - float(AtmB))/(255 - float(AtmB)))
+        # print(transB[i,j])
         if transR[i,j] > 255:
             transR[i,j] = 255
         if transG[i,j] > 255:
             transG[i,j] = 255
         if transB[i,j] > 255:
             transB[i,j] = 255
+        if transB[i,j] < 0:
+            print(transB[i,j])
 
 # AtmR = np.array(AtmR,dtype = np.uint8) 
 # AtmG = np.array(AtmG,dtype = np.uint8) 
@@ -198,36 +252,42 @@ for i in range(0,height,1):
 transR8 = np.array(transR,dtype = np.uint8) 
 transG8 = np.array(transG,dtype = np.uint8) 
 transB8 = np.array(transB,dtype = np.uint8) 
-ImageTransR = Image.fromarray(transR8,'L')
-ImageTransR.show()
+# guided = guidedFilter(transB8,13,70,0.01) 
+# cv2.imshow('Guided Filter',guided)
 
-Image_trans = cv2.merge((transR,transG,transB))
+
+TransP = np.zeros((height,width),dtype=int)
+for i in range(0,height):
+    for j in range(0,width):
+        TransP[i,j]=int((transR[i,j]+transB[i,j]+transG[i,j])//3)
 
 cv2.imshow("Transmitance Image R",transR8)
 cv2.imshow("Transmitance Image G",transG8)
 cv2.imshow("Transmitance Image B",transB8)
 cv2.waitKey(0)
 
-Image_dehaze = np.zeros((height,width,3))
+Image_dehaze = np.zeros((height,width,3),dtype=int)
 
 for i in range(0,height,1):
     for j in range(0,width,1):
-        Image_dehaze[i,j,0] = int(((r[i,j] - AtmR)//transR[i,j]) + AtmR)
+        Image_dehaze[i,j,0] = int(255*(max(float(r[i,j]) - float(AtmR),0)/float(TransP[i,j])) + float(AtmR))
+        print(str(r[i,j]) + ' y ' + str(TransP[i,j]))
+        print(Image_dehaze[i,j,0])
         # print(Image_dehaze[i,j,0])
-        Image_dehaze[i,j,1] = int(((g[i,j] - AtmG)//transG[i,j]) + AtmG)
-        Image_dehaze[i,j,2] = int(((b[i,j] - AtmB)//transB[i,j]) + AtmB)
+        Image_dehaze[i,j,1] = int(255*(max(float(g[i,j]) - float(AtmG),0)/float(TransP[i,j])) + float(AtmG))
+        Image_dehaze[i,j,2] = int(255*(max(float(b[i,j]) - float(AtmB),0)/float(TransP[i,j])) + float(AtmB))
         if Image_dehaze[i,j,0] > 255:
             Image_dehaze[i,j,0] = 255
         if Image_dehaze[i,j,1] > 255:
-            Image_dehaze[i,j,1] = 255
+            Image_dehaze[i,j,1] = 2555
         if Image_dehaze[i,j,2] > 255:
             Image_dehaze[i,j,2] = 255
 # print(Image_dehaze)
 Image_dehaze = np.array(Image_dehaze,dtype = np.uint8) 
-Image_dehaze2 = Image.fromarray(Image_dehaze,"RGB")
-Image_dehaze2.show()
-# cv2.imshow("Image dehaze",Image_dehaze)
-# cv2.waitKey(0)
+# Image_dehaze2 = Image.fromarray(Image_dehaze,"RGB")
+# Image_dehaze2.show()
+cv2.imshow("Image dehaze",Image_dehaze)
+cv2.waitKey(0)
 
 
 
