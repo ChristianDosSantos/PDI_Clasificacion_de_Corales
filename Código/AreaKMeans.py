@@ -23,14 +23,14 @@ threshOp2 = cv2.threshold(blur2, 100, 255, cv2.THRESH_BINARY)[1]
 
 imageGrayRGB1 = cv2.cvtColor(src1,cv2.COLOR_RGB2GRAY)
 ret1, thresh1 = cv2.threshold(imageGrayRGB1, 127, 255, 0)
-contours1, hierarchy1 = cv2.findContours(thresh1, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+contours1, hierarchy1 = cv2.findContours(thresh1, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
 imageRGBThreshColor1 = cv2.cvtColor(imageGrayRGB1,cv2.COLOR_GRAY2RGB)
 cv2.drawContours(imageRGBThreshColor1, contours1, -1, (255,255,255), 3)
 # cv2.imshow("Filled Cluster 1", imageRGBThreshColor1)
 
 imageGrayRGB2 = cv2.cvtColor(src2,cv2.COLOR_RGB2GRAY)
 ret2, thresh2 = cv2.threshold(imageGrayRGB2, 127, 255, 0)
-contours2, hierarchy2 = cv2.findContours(thresh2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+contours2, hierarchy2 = cv2.findContours(thresh2, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
 imageRGBThreshColor2 = cv2.cvtColor(imageGrayRGB2,cv2.COLOR_GRAY2RGB)
 cv2.drawContours(imageRGBThreshColor2, contours2, -1, (255,255,255), 3)
 # cv2.imshow("Filled Cluster 2", imageRGBThreshColor2)
@@ -43,6 +43,7 @@ contours1, hierarchy1 = cv2.findContours(threshOpGray1, cv2.RETR_EXTERNAL, cv2.C
 ImageFinal1 = threshOp1.copy()
 cv2.drawContours(threshOp1, contours1, -1, (0,255,0), 1)
 # cv2.imshow("Contours Cluster 1", threshOp1)
+print("Area for cluster 1")
 for contour in contours1:
     print(cv2.contourArea(contour))
 # cv2.waitKey(0)
@@ -75,6 +76,7 @@ contours2, hierarchy2 = cv2.findContours(threshOpGray2, cv2.RETR_EXTERNAL, cv2.C
 ImageFinal2 = threshOp2.copy()
 cv2.drawContours(threshOp2, contours2, -1, (0,255,0), 1)
 # cv2.imshow("Contours Cluster 2", threshOp2)
+print("Area for cluster 2")
 for contour in contours2:
     print(cv2.contourArea(contour))
 # cv2.waitKey(0)
